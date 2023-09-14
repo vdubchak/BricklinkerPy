@@ -1,18 +1,25 @@
+import os
+
 from rauth import OAuth1Service
 import json
 
+BL_CONSUMER_KEY = os.environ['BL_CONSUMER_KEY']
+BL_CONSUMER_SECRET = os.environ['BL_CONSUMER_SECRET']
+BL_ACCESS_TOKEN = os.environ['BL_ACCESS_TOKEN']
+BL_TOKEN_SECRET = os.environ['BL_TOKEN_SECRET']
+
 
 class ApiClient:
-    def __init__(self, consumer_key, consumer_secret, access_token, access_token_secret):
+    def __init__(self):
         print('Initializing api client')
 
         self.service = OAuth1Service(name='bricklink',
-                                     consumer_key=consumer_key,
-                                     consumer_secret=consumer_secret,
+                                     consumer_key=BL_CONSUMER_KEY,
+                                     consumer_secret=BL_CONSUMER_SECRET,
                                      base_url='https://api.bricklink.com/api/store/v1/')
         print('Creating session')
 
-        self.session = self.service.get_session((access_token, access_token_secret))
+        self.session = self.service.get_session((BL_ACCESS_TOKEN, BL_TOKEN_SECRET))
 
     def processResponse(self, response, method, url, params):
         if not 'meta' in response:
