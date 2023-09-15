@@ -1,4 +1,5 @@
 import os
+import logging
 
 from rauth import OAuth1Service
 import json
@@ -24,13 +25,13 @@ def processResponse(response, method, url, params):
 
 class ApiClient:
     def __init__(self):
-        print('Initializing api client')
+        logging.debug('Initializing api client')
 
         self.service = OAuth1Service(name='bricklink',
                                      consumer_key=BL_CONSUMER_KEY,
                                      consumer_secret=BL_CONSUMER_SECRET,
                                      base_url='https://api.bricklink.com/api/store/v1/')
-        print('Creating session')
+        logging.debug('Creating session')
 
         self.session = self.service.get_session((BL_ACCESS_TOKEN, BL_TOKEN_SECRET))
 

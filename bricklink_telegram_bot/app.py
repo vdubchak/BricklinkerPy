@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import logging
 
 from telegram import Update
 from telegram.ext import MessageHandler, CommandHandler, filters, Application, CallbackQueryHandler
@@ -8,7 +9,9 @@ from telegram.ext import MessageHandler, CommandHandler, filters, Application, C
 from handlers import startHandler, priceHandler, helpHandler, infoHandler, groupButtonHandler, priceButtonHandler, \
     defButtonHandler, soldButtonHandler, stockButtonHandler
 
-TOKEN = os.environ['API_TEST_TOKEN']
+TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
+LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG')
+logging.getLogger().setLevel(level=LOGLEVEL.upper())
 
 
 def lambda_handler(event, context):
@@ -16,19 +19,19 @@ def lambda_handler(event, context):
         asyncio.get_event_loop().run_until_complete(run_handler(event))
         return {"statusCode": 200}
     except Exception as e:
-        print(e)
+        logging.error(e)
         return {"statusCode": 500}
 
 
 async def run_handler(event):
-    print("Calling lambda")
+    logging.debug("Calling lambda")
     dispatcher = Application.builder().token(token=TOKEN).build()
-    print("Adding command handlers")
+    logging.debug("Adding command handlers")
     dispatcher.add_handler(CommandHandler(command='start', callback=startHandler))
     dispatcher.add_handler(CommandHandler(command='price', callback=priceHandler))
     dispatcher.add_handler(CommandHandler(command='help', callback=helpHandler))
     dispatcher.add_handler(CommandHandler(command='info', callback=infoHandler))
-    print("Adding message handler")
+    logging.debug("Adding message handler")
     dispatcher.add_handler(MessageHandler(filters=filters.TEXT & (~filters.COMMAND), callback=infoHandler))
     dispatcher.add_handler(CallbackQueryHandler(groupButtonHandler, pattern="^.*more.*$"))
     dispatcher.add_handler(CallbackQueryHandler(priceButtonHandler, pattern="^.*PRICE.*$"))
@@ -36,9 +39,9 @@ async def run_handler(event):
     dispatcher.add_handler(CallbackQueryHandler(stockButtonHandler, pattern="^.*STOCK.*$"))
     dispatcher.add_handler(CallbackQueryHandler(defButtonHandler))
     await dispatcher.initialize()
-    print("Application initialized")
+    logging.debug("Application initialized")
     await dispatcher.process_update(update=Update.de_json(json.loads(event["body"]), dispatcher.bot))
-    print("Shutting down application")
+    logging.debug("Shutting down application")
 
     await dispatcher.shutdown()
 

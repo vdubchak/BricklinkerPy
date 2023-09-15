@@ -1,4 +1,5 @@
 import os
+import logging
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat
 from telegram.ext import ContextTypes
@@ -16,7 +17,7 @@ HELP_TEXT = "Welcome to Bricklink telegram bot.\n"\
 
 
 async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("Processing start command")
+    logging.debug("Processing start command")
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=HELP_TEXT
@@ -24,8 +25,8 @@ async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("Processing start command")
-    if context.args[0]:
+    logging.debug("Processing start command")
+    if context.args and context.args[0] and len(context.args[0]) > 0:
         reply_markup = None
         try:
             response = resolve_info(context.args[0])
@@ -33,7 +34,7 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = formatInfoResponse(response)
             reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
         except Exception as e:
-            print(e)
+            logging.debug(e)
             response = e
         await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
     else:
@@ -44,7 +45,7 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def infoHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("Processing info request")
+    logging.debug("Processing info request")
     reply_markup = None
     try:
         response = resolve_info(update.message.text)
@@ -52,20 +53,20 @@ async def infoHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
         response = formatInfoResponse(response)
     except Exception as e:
-        print(e)
+        logging.debug(e)
         response = e
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
 
 async def priceHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("Processing info request")
+    logging.debug("Processing info request")
     try:
         response = resolve_price(update.message.text)
-        print("Response from bl: " + str(response))
+        logging.debug("Response from bl: " + str(response))
         response = formatPriceResponse(response)
     except Exception as e:
-        print(e)
+        logging.debug(e)
         response = e
     if response is None or response.__sizeof__() == 0:
         response = "Cannot find data for "
@@ -76,23 +77,23 @@ async def priceHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def groupButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
-    print("Query data: " + query.data)
+    logging.debug("Query data: " + query.data)
     item = query.data.replace("more ", "")
     await query.answer(url="https://t.me/" + BOT_NAME + "?start=" + item)
 
 
 async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    print("Query data: " + query.data)
+    logging.debug("Query data: " + query.data)
     await query.answer()
-    print("Processing price button request")
+    logging.debug("Processing price button request")
     try:
         response = resolve_price(query.data)
-        print("Response from bl: " + str(response))
+        logging.debug("Response from bl: " + str(response))
         response = formatPriceResponse(response)
 
     except Exception as e:
-        print(e)
+        logging.debug(e)
         response = e
     if response is None or response.__sizeof__() == 0:
         response = "Cannot find data for " + query.data
@@ -102,14 +103,14 @@ async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    print("Query data: " + query.data)
+    logging.debug("Query data: " + query.data)
     await query.answer()
-    print("Processing sold button request")
+    logging.debug("Processing sold button request")
     try:
         response = resolve_sold(query.data)
         response = formatItemsSoldResponse(response)
     except Exception as e:
-        print(e)
+        logging.debug(e)
         response = e
     if response is None or response.__sizeof__() == 0:
         response = "Cannot find data for " + query.data
@@ -119,14 +120,14 @@ async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    print("Query data: " + query.data)
+    logging.debug("Query data: " + query.data)
     await query.answer()
-    print("Processing stock button request")
+    logging.debug("Processing stock button request")
     try:
         response = resolve_sold(query.data)
         response = formatItemsForSaleResponse(response)
     except Exception as e:
-        print(e)
+        logging.debug(e)
         response = e
     if response is None or response.__sizeof__() == 0:
         response = "Cannot find data for " + query.data
