@@ -9,6 +9,19 @@ BL_ACCESS_TOKEN = os.environ['BL_ACCESS_TOKEN']
 BL_TOKEN_SECRET = os.environ['BL_TOKEN_SECRET']
 
 
+def processResponse(response, method, url, params):
+    if not 'meta' in response:
+        raise Exception('No meta and/or data key in response')
+    meta = response['meta']
+    if meta['code'] not in (200, 201, 204):
+        if meta['message'] == 'INVALID_URI':
+            raise Exception(meta['description'])
+
+    data = response['data'] if 'data' in response else []
+
+    return data
+
+
 class ApiClient:
     def __init__(self):
         print('Initializing api client')
@@ -21,18 +34,6 @@ class ApiClient:
 
         self.session = self.service.get_session((BL_ACCESS_TOKEN, BL_TOKEN_SECRET))
 
-    def processResponse(self, response, method, url, params):
-        if not 'meta' in response:
-            raise Exception('No meta and/or data key in response')
-        meta = response['meta']
-        if meta['code'] not in (200, 201, 204):
-            if meta['message'] == 'INVALID_URI':
-                raise Exception(meta['description'])
-
-        data = response['data'] if 'data' in response else []
-
-        return data
-
     def request(self, method, url, params):
 
         if method in ('POST', 'PUT', 'DELETE'):
@@ -41,16 +42,24 @@ class ApiClient:
         else:
             response = self.session.request(method, url, True, '', params=params)
         responseJson = json.loads(response.content)
-        return self.processResponse(responseJson, method, url, params)
+        return processResponse(responseJson, method, url, params)
 
-    def get(self, url, params={}):
+    def get(self, url, params=None):
+        if params is None:
+            params = {}
         return self.request('GET', url, params)
 
-    def post(self, url, params={}):
+    def post(self, url, params=None):
+        if params is None:
+            params = {}
         return self.request('POST', url, params)
 
-    def put(self, url, params={}):
+    def put(self, url, params=None):
+        if params is None:
+            params = {}
         return self.request('PUT', url, params)
 
-    def delete(self, url, params={}):
+    def delete(self, url, params=None):
+        if params is None:
+            params = {}
         return self.request('DELETE', url, params)

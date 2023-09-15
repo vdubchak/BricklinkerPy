@@ -6,6 +6,9 @@ version = 0.1
 [default.global.parameters]
 stack_name = "BricklinkerPy"
 
+[prod.global.parameters]
+stack_name = "BricklinkerPy-prod"
+
 [default.build.parameters]
 cached = true
 parallel = true
@@ -21,6 +24,17 @@ s3_prefix = "BricklinkerPy"
 region = "eu-north-1"
 disable_rollback = true
 image_repositories = []
+
+
+[prod.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "BricklinkerPy-prod"
+region = "eu-north-1"
+disable_rollback = true
+image_repositories = []
+
 
 [default.package.parameters]
 resolve_s3 = true
