@@ -24,6 +24,8 @@ def resolve_request(message) -> InfoRequest:
     itemType = None
     if itemNum:
         itemType = "SET"
+        if itemNum.find("-") == -1:
+            itemNum = itemNum + "-1"
         print('Requesting info for set ' + itemNum)
     else:
         itemNum = matchRegexp(message, MINIFIG_EXPR)
