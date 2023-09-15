@@ -21,20 +21,26 @@ def formatPriceResponse(message: dict) -> str:
 
 
 def formatItemsSoldResponse(message: dict) -> str:
-    res = u"\U0001F4B1 Currency: " + unescape_html(message["currency_code"]) + resolve_flag_emoji("ua") + ""
-    for item in itertools.islice(message["price_detail"], 20):
-        res += "\nSeller: " + resolve_flag_emoji(item["seller_country_code"]) + \
-            ", Buyer: " + resolve_flag_emoji(item["buyer_country_code"]) + \
-            ", Price: " + item["unit_price"] + ", Quantity: " + str(item["quantity"])
+    if len(message["price_detail"] > 0):
+        res = u"\U0001F4B1 Currency: " + unescape_html(message["currency_code"]) + resolve_flag_emoji("ua") + ""
+        for item in itertools.islice(message["price_detail"], 20):
+            res += "\nSeller: " + resolve_flag_emoji(item["seller_country_code"]) + \
+                ", Buyer: " + resolve_flag_emoji(item["buyer_country_code"]) + \
+                ", Price: " + item["unit_price"] + ", Quantity: " + str(item["quantity"])
+    else:
+        res = "Seems like no " + message["item"]["no"] + " were sold recently \U0001F914"
     return res
 
 
 def formatItemsForSaleResponse(message: dict) -> str:
-    res = u"\U0001F4B1 Currency: " + unescape_html(message["currency_code"]) + resolve_flag_emoji("ua") + ""
-    for item in itertools.islice(message["price_detail"], 20):
-        res += u"\n\U0001F4B5 Price: " + item["unit_price"] + ", \U0001F522 Quantity: " + str(item["quantity"]) + \
-               ", \U0001F69A Ships to " + resolve_flag_emoji("ua") + ": " + \
-               (u"\u2705" if item["shipping_available"] else u"\u274C")
+    if len(message["price_detail"] > 0):
+        res = u"\U0001F4B1 Currency: " + unescape_html(message["currency_code"]) + resolve_flag_emoji("ua") + ""
+        for item in itertools.islice(message["price_detail"], 20):
+            res += u"\n\U0001F4B5 Price: " + item["unit_price"] + ", \U0001F522 Quantity: " + str(item["quantity"]) + \
+                   ", \U0001F69A Ships to " + resolve_flag_emoji("ua") + ": " + \
+                   (u"\u2705" if item["shipping_available"] else u"\u274C")
+    else:
+        res = "Seems like " + message["item"]["no"] + " is out of stock \U0001F914"
     return res
 
 

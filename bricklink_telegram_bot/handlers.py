@@ -30,9 +30,10 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = None
         try:
             response = resolve_info(context.args[0])
-            itemNumber = response['no']
-            response = formatInfoResponse(response)
-            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
+            if response:
+                itemNumber = response['no']
+                response = formatInfoResponse(response)
+                reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
         except Exception as e:
             logging.debug(e)
             response = e
@@ -44,18 +45,38 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-async def infoHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("Processing info request")
     reply_markup = None
+    response = None
     try:
         response = resolve_info(update.message.text)
-        itemNumber = response['no']
-        reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
-        response = formatInfoResponse(response)
+        if response:
+            itemNumber = response['no']
+            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
+            response = formatInfoResponse(response)
     except Exception as e:
         logging.debug(e)
-        response = e
+    if response is None or len(response) == 0:
+        response = "Can't find anything for " + context.args[0]
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
+
+async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.debug("Processing info request")
+    reply_markup = None
+    response = None
+    try:
+        response = resolve_info(update.message.text)
+        if response and response['no']:
+            itemNumber = response['no']
+            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
+            response = formatInfoResponse(response)
+    except Exception as e:
+        logging.debug(e)
+    if (response is None or len(response) == 0) \
+            and (update.effective_chat.type != Chat.SUPERGROUP and update.effective_chat.type != Chat.GROUP):
+        response = "Can't find anything for " + update.message.text
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
 
@@ -63,13 +84,14 @@ async def priceHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("Processing info request")
     try:
         response = resolve_price(update.message.text)
-        logging.debug("Response from bl: " + str(response))
-        response = formatPriceResponse(response)
+        if response:
+            logging.debug("Response from bl: " + str(response))
+            response = formatPriceResponse(response)
     except Exception as e:
         logging.debug(e)
         response = e
-    if response is None or response.__sizeof__() == 0:
-        response = "Cannot find data for "
+    if response is None or len(response) == 0:
+        response = "Cannot find data for " + update.message.text
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
@@ -89,11 +111,12 @@ async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     logging.debug("Processing price button request")
     try:
         response = resolve_price(query.data)
-        logging.debug("Response from bl: " + str(response))
-        response = formatPriceResponse(response)
+        if response:
+            logging.debug("Response from bl: " + str(response))
+            response = formatPriceResponse(response)
 
     except Exception as e:
-        logging.debug(e)
+        logging.error(e)
         response = e
     if response is None or response.__sizeof__() == 0:
         response = "Cannot find data for " + query.data
@@ -108,9 +131,10 @@ async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     logging.debug("Processing sold button request")
     try:
         response = resolve_sold(query.data)
-        response = formatItemsSoldResponse(response)
+        if response:
+            response = formatItemsSoldResponse(response)
     except Exception as e:
-        logging.debug(e)
+        logging.error(e)
         response = e
     if response is None or response.__sizeof__() == 0:
         response = "Cannot find data for " + query.data
@@ -147,8 +171,8 @@ def resolveKeyboard(update: Update, item_number):
         ]
     else:
         keyboard = [
-            [InlineKeyboardButton("Price guide for new " + item_number, callback_data="PRICE NEW " + item_number),
-             InlineKeyboardButton("Price guide for used " + item_number, callback_data="PRICE USED " + item_number)],
+            [InlineKeyboardButton("Prices for new " + item_number, callback_data="PRICE NEW " + item_number),
+             InlineKeyboardButton("Prices for used " + item_number, callback_data="PRICE USED " + item_number)],
             [InlineKeyboardButton("Recently sold new", callback_data="SOLD NEW " + item_number),
              InlineKeyboardButton("Recently sold used", callback_data="SOLD USED " + item_number)],
             [InlineKeyboardButton("For sale new", callback_data="STOCK NEW " + item_number),
