@@ -18,22 +18,21 @@ def formatInfoResponse(message: dict) -> str:
 
 
 def formatPriceResponse(message: dict) -> str:
-    return u"\U0001F4B1 Currency: " + unescape_html(message["currency_code"]) + "\n" \
-                                                                                "\U0001F4C9 Minimal price: " + message[
-               "min_price"] + "\n" \
-                              "\U0001F4C6 Maximal price: " + message["max_price"] + "\n" \
-                                                                                    "\U0001F4CA Average price: " + \
-           message["avg_price"] + "\n" \
-                                  "\U0001F522 Quantity for sale: " + str(message["total_quantity"])
+    return u"Price for " + message["item"]["no"] + " (" + message["new_or_used"] + ")" + "\n" \
+        "\U0001F4C9 Minimal price: " + message["min_price"] + unescape_html(message["currency_code"]) + "\n" \
+        "\U0001F4C6 Maximal price: " + message["max_price"] + unescape_html(message["currency_code"]) + "\n" \
+        "\U0001F4CA Average price: " + message["avg_price"] + unescape_html(message["currency_code"]) + "\n" \
+        "\U0001F522 Quantity for sale: " + str(message["total_quantity"])
 
 
 def formatItemsSoldResponse(message: dict) -> str:
     if len(message["price_detail"]) > 0:
-        res = u"\U0001F4B1 Currency: " + unescape_html(message["currency_code"]) + resolve_flag_emoji("ua") + ""
+        res = u"Recently sold " + message["item"]["no"] + " (" + message["new_or_used"] + "):"
         for item in itertools.islice(message["price_detail"], 20):
             res += "\nSeller: " + resolve_flag_emoji(item["seller_country_code"]) + \
                    ", Buyer: " + resolve_flag_emoji(item["buyer_country_code"]) + \
-                   ", Price: " + item["unit_price"] + ", Quantity: " + str(item["quantity"])
+                   ", Price: " + item["unit_price"] + " " + unescape_html(message["currency_code"]) + \
+                   ", Quantity: " + str(item["quantity"])
     else:
         res = "Seems like no " + message["item"]["no"] + " were sold recently \U0001F914"
     return res
@@ -41,9 +40,10 @@ def formatItemsSoldResponse(message: dict) -> str:
 
 def formatItemsForSaleResponse(message: dict) -> str:
     if len(message["price_detail"]) > 0:
-        res = u"\U0001F4B1 Currency: " + unescape_html(message["currency_code"]) + resolve_flag_emoji("ua") + ""
+        res = message["item"]["no"] + " for sale (" + message["new_or_used"] + "):"
         for item in itertools.islice(message["price_detail"], 20):
-            res += u"\n\U0001F4B5 Price: " + item["unit_price"] + ", \U0001F522 Quantity: " + str(item["quantity"]) + \
+            res += u"\n\U0001F4B5 Price: " + item["unit_price"] + unescape_html(message["currency_code"]) +\
+                   ", \U0001F522 Quantity: " + str(item["quantity"]) + \
                    ", \U0001F69A Ships to " + resolve_flag_emoji("ua") + ": " + \
                    (u"\u2705" if item["shipping_available"] else u"\u274C")
     else:
