@@ -10,11 +10,13 @@ from response_formatters import formatInfoResponse, formatPriceResponse, formatI
 from request_matcher import resolve_price, resolve_info, resolve_sold
 
 BOT_NAME = os.environ['BOT_NAME']
-HELP_TEXT = "Welcome to Bricklink telegram bot.\n"\
-                 "Try typing in set number or minifigure number to get more info on it.\n"\
-                 "Example \"75100\" or \"sw0547\""\
-                 "Alternatively or if bot is in group chat you can use commands like "\
-                 "/info 42069 or /price col404"
+HELP_TEXT = "Welcome to Bricklink telegram bot.\n" \
+            "Try typing in set number or minifigure number to get more info on it.\n" \
+            "Example \"75100\" or \"sw0547\"" \
+            "Alternatively or if bot is in group chat you can use commands like " \
+            "/info 42069 or /price col404\n" \
+            "You can also use /search command to find set numbers (currently not working for minifigures)\n" \
+            "Example: /search hotel"
 
 
 async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
