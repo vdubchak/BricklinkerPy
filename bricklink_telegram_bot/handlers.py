@@ -4,8 +4,9 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat
 from telegram.ext import ContextTypes
 
+from rebrickable_client import make_search_request
 from response_formatters import formatInfoResponse, formatPriceResponse, formatItemsSoldResponse, \
-    formatItemsForSaleResponse
+    formatItemsForSaleResponse, search_response_formatter
 from request_matcher import resolve_price, resolve_info, resolve_sold
 
 BOT_NAME = os.environ['BOT_NAME']
@@ -21,6 +22,28 @@ async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=HELP_TEXT
+    )
+
+
+async def searchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    response = None
+    reply_markup = None
+    logging.debug("Processing search command")
+    if context.args and context.args[0] and len(context.args[0]) > 0:
+        re_response = make_search_request(context.args[0])
+        if re_response:
+            response_keyboard = search_response_formatter(re_response)
+            if len(response_keyboard) > 0:
+                reply_markup = InlineKeyboardMarkup(response_keyboard)
+                response = "Your results:"
+            else:
+                response = "Nothing found for :" + context.args[0]
+    else:
+        response = "Try adding some words to your search, for example /search X-Wing"
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=response,
+        reply_markup=reply_markup
     )
 
 
@@ -80,6 +103,25 @@ async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
 
+async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    logging.debug("Query data: " + query.data)
+    reply_markup = None
+    response = None
+    try:
+        itemNumber = query.data.replace("INFO ", "")
+        response = resolve_info(itemNumber)
+        if response:
+            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
+            response = formatInfoResponse(response)
+    except Exception as e:
+        logging.debug(e)
+    if response is None or len(response) == 0:
+        response = "Can't find anything for " + context.args[0]
+    await query.answer()
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+
+
 async def priceHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("Processing info request")
     try:
@@ -126,6 +168,7 @@ async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    response = None
     logging.debug("Query data: " + query.data)
     await query.answer()
     logging.debug("Processing sold button request")
@@ -135,8 +178,8 @@ async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             response = formatItemsSoldResponse(response)
     except Exception as e:
         logging.error(e)
-        response = e
-    if response is None or response.__sizeof__() == 0:
+        # response = str(e)
+    if response is None or len(response) == 0:
         response = "Cannot find data for " + query.data
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
@@ -144,6 +187,7 @@ async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    response = None
     logging.debug("Query data: " + query.data)
     await query.answer()
     logging.debug("Processing stock button request")
@@ -151,9 +195,9 @@ async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_sold(query.data)
         response = formatItemsForSaleResponse(response)
     except Exception as e:
-        logging.debug(e)
-        response = e
-    if response is None or response.__sizeof__() == 0:
+        logging.error(e)
+        # response = str(e)
+    if response is None or len(response) == 0:
         response = "Cannot find data for " + query.data
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response)

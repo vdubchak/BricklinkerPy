@@ -7,7 +7,8 @@ from telegram import Update
 from telegram.ext import MessageHandler, CommandHandler, filters, Application, CallbackQueryHandler
 
 from handlers import startHandler, priceHandler, helpHandler, groupButtonHandler, priceButtonHandler, \
-    defButtonHandler, soldButtonHandler, stockButtonHandler, infoCommandHandler, infoMessageHandler
+    defButtonHandler, soldButtonHandler, stockButtonHandler, infoCommandHandler, infoMessageHandler, searchHandler, \
+    infoButtonHandler
 
 TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG')
@@ -31,12 +32,14 @@ async def run_handler(event):
     dispatcher.add_handler(CommandHandler(command='price', callback=priceHandler))
     dispatcher.add_handler(CommandHandler(command='help', callback=helpHandler))
     dispatcher.add_handler(CommandHandler(command='info', callback=infoCommandHandler))
+    dispatcher.add_handler(CommandHandler(command='search', callback=searchHandler))
     logging.debug("Adding message handler")
     dispatcher.add_handler(MessageHandler(filters=filters.TEXT & (~filters.COMMAND), callback=infoMessageHandler))
     dispatcher.add_handler(CallbackQueryHandler(groupButtonHandler, pattern="^.*more.*$"))
     dispatcher.add_handler(CallbackQueryHandler(priceButtonHandler, pattern="^.*PRICE.*$"))
     dispatcher.add_handler(CallbackQueryHandler(soldButtonHandler, pattern="^.*SOLD.*$"))
     dispatcher.add_handler(CallbackQueryHandler(stockButtonHandler, pattern="^.*STOCK.*$"))
+    dispatcher.add_handler(CallbackQueryHandler(infoButtonHandler, pattern="^.*INFO.*$"))
     dispatcher.add_handler(CallbackQueryHandler(defButtonHandler))
     await dispatcher.initialize()
     logging.debug("Application initialized")
