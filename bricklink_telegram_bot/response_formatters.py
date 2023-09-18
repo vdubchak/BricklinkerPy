@@ -1,6 +1,9 @@
 import itertools
+import re
 
 from telegram import InlineKeyboardButton
+
+from request_matcher import SET_EXPR
 
 ASCII_LOWER = "abcdefghijklmnopqrstuvwxyz0123456789"
 OFFSET = ord("🇦") - ord("A")
@@ -71,13 +74,14 @@ def resolve_flag_emoji(countrycode: str) -> str:
     return "".join([chr(ord(c.upper()) + OFFSET) for c in code])
 
 
-def search_response_formatter(message: dict):
+def search_response_formatter(message: dict, target: str):
     keyboard = []
-    if len(message["results"]) > 0:
-        respList = sorted(message["results"], key=lambda k: k['year'], reverse=True)
-        for item in itertools.islice(respList, 20):
+    sets = list(filter(lambda x: re.search(SET_EXPR, x["set_num"]), message["results"]))
+    if len(sets) > 0:
+        sets = sorted(sets, key=lambda k: k['year'], reverse=True)
+        for item in itertools.islice(sets, 20):
             keyboard.append([
                 InlineKeyboardButton(
                     item["set_num"] + " - " + unescape_html(item["name"]) + " (" + str(item["year"]) + ")",
-                    callback_data="INFO " + item["set_num"])])
+                    callback_data=target + " " + item["set_num"])])
     return keyboard

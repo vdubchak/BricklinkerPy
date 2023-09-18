@@ -32,14 +32,18 @@ async def searchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = None
     logging.debug("Processing search command")
     if context.args and context.args[0] and len(context.args[0]) > 0:
-        re_response = make_search_request(context.args[0])
+        query = " "
+        query = query.join(context.args)
+        re_response = make_search_request(query)
         if re_response:
-            response_keyboard = search_response_formatter(re_response)
+            target = "more" if (update.effective_chat.type == Chat.SUPERGROUP
+                                or update.effective_chat.type == Chat.GROUP) else "INFO"
+            response_keyboard = search_response_formatter(re_response, target)
             if len(response_keyboard) > 0:
                 reply_markup = InlineKeyboardMarkup(response_keyboard)
                 response = "Your results:"
             else:
-                response = "Nothing found for :" + context.args[0]
+                response = "Nothing found for :" + query
     else:
         response = "Try adding some words to your search, for example /search X-Wing"
     await context.bot.send_message(
@@ -62,6 +66,8 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logging.debug(e)
             response = e
+        if response is None or len(response) == 0:
+            response = "Can't find anything for " + context.args[0]
         await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
     else:
         await context.bot.send_message(
