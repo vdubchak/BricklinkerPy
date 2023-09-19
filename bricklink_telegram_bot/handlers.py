@@ -81,7 +81,8 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     reply_markup = None
     response = None
     try:
-        response = resolve_info(update.message.text)
+        query = update.message.text.lower()
+        response = resolve_info(query)
         if response:
             itemNumber = response['no']
             reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
@@ -89,7 +90,7 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except Exception as e:
         logging.debug(e)
     if response is None or len(response) == 0:
-        response = "Can't find anything for " + context.args[0]
+        response = "Can't find anything for " + query
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
 
@@ -98,7 +99,8 @@ async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     reply_markup = None
     response = None
     try:
-        response = resolve_info(update.message.text)
+        query = update.message.text.lower()
+        response = resolve_info(query)
         if response and response['no']:
             itemNumber = response['no']
             reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
@@ -130,10 +132,11 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
 
-async def priceHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("Processing info request")
     try:
-        response = resolve_price(update.message.text)
+        query = update.message.text.lower()
+        response = resolve_price(query)
         if response:
             logging.debug("Response from bl: " + str(response))
             response = formatPriceResponse(response)

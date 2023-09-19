@@ -6,7 +6,7 @@ import logging
 from telegram import Update
 from telegram.ext import MessageHandler, CommandHandler, filters, Application, CallbackQueryHandler
 
-from handlers import startHandler, priceHandler, helpHandler, groupButtonHandler, priceButtonHandler, \
+from handlers import startHandler, priceCommandHandler, helpHandler, groupButtonHandler, priceButtonHandler, \
     defButtonHandler, soldButtonHandler, stockButtonHandler, infoCommandHandler, infoMessageHandler, searchHandler, \
     infoButtonHandler
 
@@ -29,7 +29,7 @@ async def run_handler(event):
     dispatcher = Application.builder().token(token=TOKEN).build()
     logging.debug("Adding command handlers")
     dispatcher.add_handler(CommandHandler(command='start', callback=startHandler))
-    dispatcher.add_handler(CommandHandler(command='price', callback=priceHandler))
+    dispatcher.add_handler(CommandHandler(command='price', callback=priceCommandHandler))
     dispatcher.add_handler(CommandHandler(command='help', callback=helpHandler))
     dispatcher.add_handler(CommandHandler(command='info', callback=infoCommandHandler))
     dispatcher.add_handler(CommandHandler(command='search', callback=searchHandler))
