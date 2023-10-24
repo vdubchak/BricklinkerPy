@@ -11,7 +11,7 @@ BL_TOKEN_SECRET = os.environ['BL_TOKEN_SECRET']
 
 
 def processResponse(response, method, url, params):
-    if not 'meta' in response:
+    if 'meta' not in response:
         raise Exception('No meta and/or data key in response')
     meta = response['meta']
     if meta['code'] not in (200, 201, 204):

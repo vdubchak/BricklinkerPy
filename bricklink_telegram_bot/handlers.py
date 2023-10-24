@@ -17,6 +17,7 @@ HELP_TEXT = "Welcome to Bricklink telegram bot.\n" \
             "/info 42069 or /price col404\n" \
             "You can also use /search command to find set numbers (currently not working for minifigures)\n" \
             "Example: /search hotel"
+BL_URL = "https://www.bricklink.com/v2/catalog/catalogitem.page?{}={}"
 
 
 async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,22 +31,23 @@ async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def searchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = None
     reply_markup = None
+    request_str = None
     logging.debug("Processing search command")
     if context.args and context.args[0] and len(context.args[0]) > 0:
-        query = " "
-        query = query.join(context.args)
-        re_response = make_search_request(query)
-        if re_response:
-            target = "more" if (update.effective_chat.type == Chat.SUPERGROUP
-                                or update.effective_chat.type == Chat.GROUP) else "INFO"
-            response_keyboard = search_response_formatter(re_response, target)
-            if len(response_keyboard) > 0:
-                reply_markup = InlineKeyboardMarkup(response_keyboard)
-                response = "Your results:"
-            else:
-                response = "Nothing found for :" + query
-    else:
-        response = "Try adding some words to your search, for example /search X-Wing"
+        request_str = " "
+        request_str = request_str.join(context.args)
+    elif len(update.message.text.replace('/search', '')) > 0:
+        request_str = update.message.text.replace('/search', '')
+    re_response = make_search_request(request_str)
+    if re_response:
+        target = "more" if (update.effective_chat.type == Chat.SUPERGROUP
+                            or update.effective_chat.type == Chat.GROUP) else "INFO"
+        response_keyboard = search_response_formatter(re_response, target)
+        if len(response_keyboard) > 0:
+            reply_markup = InlineKeyboardMarkup(response_keyboard)
+            response = "Search result for '" + request_str + "'"
+        else:
+            response = "Nothing found for: " + request_str
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=response,
@@ -61,8 +63,8 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = resolve_info(context.args[0])
             if response:
                 itemNumber = response['no']
+                reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber, item_type=response["type"]))
                 response = formatInfoResponse(response)
-                reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
         except Exception as e:
             logging.debug(e)
             response = e
@@ -85,13 +87,14 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_info(query)
         if response:
             itemNumber = response['no']
-            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
+            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber, item_type=response["type"]))
             response = formatInfoResponse(response)
     except Exception as e:
         logging.debug(e)
     if response is None or len(response) == 0:
-        response = "Can't find anything for " + query
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+        await searchHandler(update, context)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
 
 async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -103,14 +106,15 @@ async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_info(query)
         if response and response['no']:
             itemNumber = response['no']
-            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
+            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber, item_type=response["type"]))
             response = formatInfoResponse(response)
     except Exception as e:
         logging.debug(e)
     if (response is None or len(response) == 0) \
             and (update.effective_chat.type != Chat.SUPERGROUP and update.effective_chat.type != Chat.GROUP):
-        response = "Can't find anything for " + update.message.text
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+        await searchHandler(update, context)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
 
 async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -122,7 +126,7 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         itemNumber = query.data.replace("INFO ", "")
         response = resolve_info(itemNumber)
         if response:
-            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber))
+            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber, item_type=response["type"]))
             response = formatInfoResponse(response)
     except Exception as e:
         logging.debug(e)
@@ -150,7 +154,6 @@ async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def groupButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
     logging.debug("Query data: " + query.data)
     item = query.data.replace("more ", "")
@@ -219,10 +222,11 @@ async def defButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await query.answer(text="Not implemented yet")
 
 
-def resolveKeyboard(update: Update, item_number):
+def resolveKeyboard(update: Update, item_number, item_type):
     if update.effective_chat.type == Chat.SUPERGROUP or update.effective_chat.type == Chat.GROUP:
         keyboard = [
             [InlineKeyboardButton("More info on " + item_number, callback_data="more " + item_number)],
+            [InlineKeyboardButton("View on BL", url=BL_URL.format(item_type[0], item_number))]
         ]
     else:
         keyboard = [
@@ -232,5 +236,6 @@ def resolveKeyboard(update: Update, item_number):
              InlineKeyboardButton("Recently sold used", callback_data="SOLD USED " + item_number)],
             [InlineKeyboardButton("For sale new", callback_data="STOCK NEW " + item_number),
              InlineKeyboardButton("For sale used", callback_data="STOCK USED " + item_number)],
+            [InlineKeyboardButton("View on BL", url=BL_URL.format(item_type[0], item_number))]
         ]
     return keyboard
