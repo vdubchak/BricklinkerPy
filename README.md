@@ -1,3 +1,11 @@
+# TODO
+
+- Make user-friendly bot dialog flow
+- Add 'sets containing' button for minifigures response and 'minifigures included' for sets
+- Make nested search for multiple words request
+- Make readme
+- Add tests
+  
 # BricklinkerPy
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
