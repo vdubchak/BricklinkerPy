@@ -1,3 +1,4 @@
 requests
 rauth
 python-telegram-bot
+boto3

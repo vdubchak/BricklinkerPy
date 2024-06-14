@@ -47,3 +47,13 @@ warm_containers = "EAGER"
 
 [default.local_start_lambda.parameters]
 warm_containers = "EAGER"
+
+[test.deploy.parameters]
+stack_name = "BricklinkerPy-test"
+resolve_s3 = true
+s3_prefix = "BricklinkerPy-test"
+region = "eu-north-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []

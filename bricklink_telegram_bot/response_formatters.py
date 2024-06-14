@@ -74,7 +74,7 @@ def resolve_flag_emoji(countrycode: str) -> str:
     return "".join([chr(ord(c.upper()) + OFFSET) for c in code])
 
 
-def search_response_formatter(message: dict, target: str):
+def set_search_response_formatter(message: dict, target: str):
     keyboard = []
     sets = list(filter(lambda x: re.search(SET_EXPR, x["set_num"]), message["results"]))
     if len(sets) > 0:
@@ -84,4 +84,19 @@ def search_response_formatter(message: dict, target: str):
                 InlineKeyboardButton(
                     item["set_num"] + " - " + unescape_html(item["name"]) + " (" + str(item["year"]) + ")",
                     callback_data=target + " " + item["set_num"])])
+    return keyboard
+
+
+def fig_search_response_formatter(minifigs: dict, target: str):
+    keyboard = []
+    limit = 0
+    if len(minifigs) > 0:
+        for code, name in minifigs.items():
+            if limit == 20:
+                break
+            limit += 1
+            keyboard.append([
+                InlineKeyboardButton(
+                    code + " - " + unescape_html(name),
+                    callback_data=target + " " + code)])
     return keyboard

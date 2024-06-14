@@ -6,7 +6,7 @@ REBRICKABLE_KEY = os.environ['REBRICKABLE_KEY']
 BASE_URL = 'https://rebrickable.com/api/v3'
 
 
-def make_search_request(search_str: str):
+def set_search_request(search_str: str):
     url = BASE_URL + "/lego/sets/"
     headers = {
         "Authorization": "key " + REBRICKABLE_KEY
