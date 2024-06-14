@@ -7,7 +7,7 @@ from telegram.ext import ContextTypes
 from s3_search_client import minifigure_search_request
 from rebrickable_client import set_search_request
 from response_formatters import formatInfoResponse, formatPriceResponse, formatItemsSoldResponse, \
-    formatItemsForSaleResponse, set_search_response_formatter, fig_search_response_formatter
+    formatItemsForSaleResponse, set_search_response_formatter, fig_search_response_formatter, search_response_formatter
 from request_matcher import resolve_price, resolve_info, resolve_sold
 
 BOT_NAME = os.environ['BOT_NAME']
@@ -29,6 +29,21 @@ async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=HELP_TEXT
     )
 
+async def searchDialogHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    request_str = None
+    logging.debug("Processing search request")
+    if context.args and context.args[0] and len(context.args[0]) > 0:
+        request_str = " "
+        request_str = request_str.join(context.args)
+    elif len(update.message.text) > 0:
+        request_str = update.message.text
+    response_keyboard = search_response_formatter(request_str)
+    response = "Is '" + request_str + "' Set or Minifigure?"
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=response,
+        reply_markup=InlineKeyboardMarkup(response_keyboard)
+    )
 
 async def setSearchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = None
@@ -36,10 +51,16 @@ async def setSearchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     request_str = None
     logging.debug("Processing search set command")
     if context.args and context.args[0] and len(context.args[0]) > 0:
+        logging.debug("Using context arguments")
         request_str = " "
         request_str = request_str.join(context.args)
-    elif len(update.message.text.replace('/search', '')) > 0:
-        request_str = update.message.text.replace('/search', '')
+    elif update.message and len(update.message.text.replace('/search_set', '').strip()) > 0:
+        logging.debug("Using update message")
+        request_str = update.message.text.replace('/search_set', '').strip()
+    elif update.callback_query:
+        logging.debug("Using callback query")
+        request_str = update.callback_query.data.replace("SETSEARCH", '').strip()
+    logging.debug("Request string is: " + str(request_str))
     re_response = set_search_request(request_str)
     if re_response:
         target = "more" if (update.effective_chat.type == Chat.SUPERGROUP
@@ -64,8 +85,10 @@ async def minifigureSearchHandler(update: Update, context: ContextTypes.DEFAULT_
     if context.args and context.args[0] and len(context.args[0]) > 0:
         request_str = " "
         request_str = request_str.join(context.args)
-    elif len(update.message.text.replace('/search_fig', '')) > 0:
-        request_str = update.message.text.replace('/search_fig', '')
+    elif update.message and len(update.message.text.replace('/search_fig', '').strip()) > 0:
+        request_str = update.message.text.replace('/search_fig', '').strip()
+    elif update.callback_query:
+        request_str = update.callback_query.data.replace("MINIFIGSEARCH", '').strip()
     re_response = minifigure_search_request(request_str)
     logging.debug('Recieved response from S3 client.')
     if re_response and len(re_response) != 0:
@@ -95,8 +118,8 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = resolve_info(context.args[0])
             if response:
                 itemNumber = response['no']
-                reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber,
-                                                                    item_type=response["type"]))
+                reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
+                                                                            item_type=response["type"]))
                 response = formatInfoResponse(response)
         except Exception as e:
             logging.debug(e)
@@ -120,8 +143,8 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_info(query)
         if response:
             itemNumber = response['no']
-            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber,
-                                                                item_type=response["type"]))
+            reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
+                                                                        item_type=response["type"]))
             response = formatInfoResponse(response)
     except Exception as e:
         logging.debug(e)
@@ -140,14 +163,14 @@ async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_info(query)
         if response and response['no']:
             itemNumber = response['no']
-            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber,
-                                                                item_type=response["type"]))
+            reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
+                                                                        item_type=response["type"]))
             response = formatInfoResponse(response)
     except Exception as e:
-        logging.debug(e)
+        logging.error(e)
     if (response is None or len(response) == 0) \
             and (update.effective_chat.type != Chat.SUPERGROUP and update.effective_chat.type != Chat.GROUP):
-        await setSearchHandler(update, context)
+        await searchDialogHandler(update, context)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
 
@@ -161,15 +184,27 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         itemNumber = query.data.replace("INFO ", "")
         response = resolve_info(itemNumber)
         if response:
-            reply_markup = InlineKeyboardMarkup(resolveKeyboard(update, item_number=itemNumber,
-                                                                item_type=response["type"]))
+            reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
+                                                                        item_type=response["type"]))
             response = formatInfoResponse(response)
     except Exception as e:
-        logging.debug(e)
+        logging.error(e)
     if response is None or len(response) == 0:
         response = "Can't find anything for " + context.args[0]
     await query.answer()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+
+async def searchSetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    logging.debug("Query data: " + query.data)
+    await query.answer()
+    await setSearchHandler(update, context)
+
+async def searchMinifigureButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    logging.debug("Query data: " + query.data)
+    await query.answer()
+    await minifigureSearchHandler(update, context)
 
 
 async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -181,7 +216,7 @@ async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
             logging.debug("Response from bl: " + str(response))
             response = formatPriceResponse(response)
     except Exception as e:
-        logging.debug(e)
+        logging.error(e)
         response = e
     if response is None or len(response) == 0:
         response = "Cannot find data for " + update.message.text
@@ -258,7 +293,7 @@ async def defButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await query.answer(text="Not implemented yet")
 
 
-def resolveKeyboard(update: Update, item_number, item_type):
+def resolveItemInfoKeyboard(update: Update, item_number, item_type):
     if update.effective_chat.type == Chat.SUPERGROUP or update.effective_chat.type == Chat.GROUP:
         keyboard = [
             [InlineKeyboardButton("More info on " + item_number, callback_data="more " + item_number)],

@@ -16,7 +16,7 @@ MINIFIGURE_FILE_NAME = os.environ['MF_FILE']
 
 def minifigure_search_request(search_str: str):
     logging.info('Initializing Minifigure Search Request for keyword: {}'.format(search_str))
-    result_dict = {}
+    result_dict = dict()
     config = Config(
         retries={
             'max_attempts': 0,
@@ -28,8 +28,9 @@ def minifigure_search_request(search_str: str):
 
         response = s3.get_object(Bucket=BUCKET, Key=MINIFIGURE_FILE_NAME)
         reader = csv.DictReader(io.StringIO(response['Body'].read().decode('utf-8')))
+        search_words = search_str.split(' ')
         for row in reader:
-            if re.search(search_str, row['name'], re.IGNORECASE):
+            if all(word.lower() in row["name"].lower() for word in search_words):
                 result_dict[row['code']] = row['name']
         s3.close()
         logging.info('Search successful with number of results: ' + str(len(result_dict)))
