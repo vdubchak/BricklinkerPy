@@ -3,7 +3,7 @@ import logging
 
 from bricklink_client import ApiClient
 
-SET_EXPR = "\\b[\\d]{2,5}(?:-\\d)?\\b"
+SET_EXPR = "\\b[\\d]{2,7}(?:-\\d)?\\b"
 MINIFIG_EXPR = "\\b[a-z]{1,3}[\\d]{2,4}\\b"
 USED_EXPR = "\\bUSED\\b"
 NEW_EXPR = "\\bNEW\\b"
@@ -73,6 +73,25 @@ def resolve_price(message):
         "new_or_used": info_request.state
     })
     return response
+
+
+def resolve_availability(itemType, itemNum):
+    new_count = resolve_availability_by_cond_count(itemType,  itemNum, "N")
+    used_count = resolve_availability_by_cond_count(itemType,  itemNum, "U")
+    return new_count + used_count > 0
+
+
+def resolve_availability_by_cond_count(itemType, itemNum, condition):
+    url = "items/" + itemType + "/" + itemNum + "/price"
+    logging.debug("[RequestMatchers] Requesting URL: " + url)
+    response = client.get(url=url, params={
+        "country_code": "UA",
+        "guide_type": "STOCK",
+        "new_or_used": condition
+    })
+    return len(response["price_detail"])
+
+
 
 
 def resolve_sold(message):

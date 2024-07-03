@@ -7,7 +7,8 @@ from telegram.ext import ContextTypes
 from s3_search_client import minifigure_search_request
 from rebrickable_client import set_search_request
 from response_formatters import formatInfoResponse, formatPriceResponse, formatItemsSoldResponse, \
-    formatItemsForSaleResponse, set_search_response_formatter, fig_search_response_formatter, search_response_formatter
+    formatItemsForSaleResponse, set_search_response_formatter, fig_search_response_formatter, search_response_formatter, \
+    escape
 from request_matcher import resolve_price, resolve_info, resolve_sold
 
 BOT_NAME = os.environ['BOT_NAME']
@@ -18,7 +19,7 @@ HELP_TEXT = "Try typing in set number, name or minifigure number to get more inf
             "You can also use /search command to find set numbers (currently not working for minifigures)\n" \
             "Example: /search hotel"
 START_TEXT = "What are you looking for? Try typing set/minifigure number or name, for example 4950, " \
-             "sw0547 or helicopter."
+             "sw0547 or fishing store."
 BL_URL = "https://www.bricklink.com/v2/catalog/catalogitem.page?{}={}"
 
 
@@ -28,6 +29,7 @@ async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=HELP_TEXT
     )
+
 
 async def searchDialogHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     request_str = None
@@ -39,18 +41,20 @@ async def searchDialogHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
         request_str = update.message.text
     logging.info("[Handlers] Argument: " + request_str)
     response_keyboard = search_response_formatter(request_str)
-    response = "Is '" + request_str + "' Set or Minifigure?"
+    response = escape("Is '" + request_str + "' Set or Minifigure?")
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=response,
-        reply_markup=InlineKeyboardMarkup(response_keyboard)
+        reply_markup=InlineKeyboardMarkup(response_keyboard),
+        parse_mode='MarkdownV2'
     )
+
 
 async def setSearchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = None
     reply_markup = None
     request_str = None
-    logging.info("[Handlers] Processing search  command")
+    logging.info("[Handlers] Processing search command")
     if context.args and context.args[0] and len(context.args[0]) > 0:
         request_str = " "
         request_str = request_str.join(context.args)
@@ -68,13 +72,14 @@ async def setSearchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response_keyboard = set_search_response_formatter(re_response, target)
         if len(response_keyboard) > 0:
             reply_markup = InlineKeyboardMarkup(response_keyboard)
-            response = "Search result for '" + request_str + "'"
+            response = escape("Search result for '" + request_str + "'")
         else:
-            response = "Nothing found for: " + request_str
+            response = escape("Nothing found for: " + request_str)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=response,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
+        parse_mode='MarkdownV2'
     )
 
 
@@ -99,15 +104,16 @@ async def minifigureSearchHandler(update: Update, context: ContextTypes.DEFAULT_
         response_keyboard = fig_search_response_formatter(re_response, target)
         if len(response_keyboard) > 0:
             reply_markup = InlineKeyboardMarkup(response_keyboard)
-            response = "Search result for '" + request_str + "'"
+            response = escape("Search result for '" + request_str + "'")
         else:
-            response = "Nothing found for: " + request_str
+            response = escape("Nothing found for: " + request_str)
     else:
-        response = "Nothing found for: " + request_str
+        response = escape("Nothing found for: " + request_str)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=response,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
+        parse_mode='MarkdownV2'
     )
 
 
@@ -127,12 +133,14 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logging.error(e)
             response = e
         if response is None or len(response) == 0:
-            response = "Can't find anything for " + context.args[0]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+            response = escape("Can't find anything for " + context.args[0])
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
+                                       parse_mode='MarkdownV2')
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=START_TEXT
+            text=escape(START_TEXT),
+            parse_mode='MarkdownV2'
         )
 
 
@@ -154,7 +162,8 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if response is None or len(response) == 0:
         await setSearchHandler(update, context)
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
+                                       parse_mode='MarkdownV2')
 
 
 async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -176,7 +185,8 @@ async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
             and (update.effective_chat.type != Chat.SUPERGROUP and update.effective_chat.type != Chat.GROUP):
         await searchDialogHandler(update, context)
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
+                                       parse_mode='MarkdownV2')
 
 
 async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -195,9 +205,12 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.error(e)
     if response is None or len(response) == 0:
-        response = "Can't find anything for " + context.args[0]
+        response = escape("Can't find anything for " + str(
+            query) + ". It is possible that this item is missing from BrickLink database.")
     await query.answer()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
+                                   parse_mode='MarkdownV2')
+
 
 async def searchSetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -206,6 +219,7 @@ async def searchSetButtonHandler(update: Update, context: ContextTypes.DEFAULT_T
 
     await query.answer()
     await setSearchHandler(update, context)
+
 
 async def searchMinifigureButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -229,9 +243,9 @@ async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
         logging.error(e)
         response = e
     if response is None or len(response) == 0:
-        response = "Cannot find data for " + update.message.text
+        response = escape("Cannot find data for " + update.message.text)
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
 async def groupButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -257,9 +271,9 @@ async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logging.error(e)
         response = e
     if response is None or response.__sizeof__() == 0:
-        response = "Cannot find data for " + query.data
+        response = escape("Cannot find data for " + query.data)
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
 async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -276,9 +290,9 @@ async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         logging.error(e)
         # response = str(e)
     if response is None or len(response) == 0:
-        response = "Cannot find data for " + query.data
+        response = escape("Cannot find data for " + query.data)
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
 async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -294,9 +308,9 @@ async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logging.error(e)
         # response = str(e)
     if response is None or len(response) == 0:
-        response = "Cannot find data for " + query.data
+        response = escape("Cannot find data for " + query.data)
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
 async def defButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
