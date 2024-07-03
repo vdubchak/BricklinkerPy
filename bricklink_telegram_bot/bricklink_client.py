@@ -12,7 +12,7 @@ BL_TOKEN_SECRET = os.environ['BL_TOKEN_SECRET']
 
 def processResponse(response, method, url, params):
     if 'meta' not in response:
-        raise Exception('No meta and/or data key in response')
+        raise Exception("No meta and/or data key in response")
     meta = response['meta']
     if meta['code'] not in (200, 201, 204):
         if meta['message'] == 'INVALID_URI':
@@ -25,13 +25,13 @@ def processResponse(response, method, url, params):
 
 class ApiClient:
     def __init__(self):
-        logging.debug('Initializing api client')
+        logging.debug("[BrickLinkClient] Initializing api client")
 
         self.service = OAuth1Service(name='bricklink',
                                      consumer_key=BL_CONSUMER_KEY,
                                      consumer_secret=BL_CONSUMER_SECRET,
                                      base_url='https://api.bricklink.com/api/store/v1/')
-        logging.debug('Creating session')
+        logging.debug("[BrickLinkClient] Creating session")
 
         self.session = self.service.get_session((BL_ACCESS_TOKEN, BL_TOKEN_SECRET))
 

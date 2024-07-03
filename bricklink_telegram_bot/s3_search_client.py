@@ -15,7 +15,7 @@ MINIFIGURE_FILE_NAME = os.environ['MF_FILE']
 
 
 def minifigure_search_request(search_str: str):
-    logging.info('Initializing Minifigure Search Request for keyword: {}'.format(search_str))
+    logging.info("[s3client] Initializing Minifigure Search Request for keyword: {}".format(search_str))
     result_dict = dict()
     config = Config(
         retries={
@@ -33,8 +33,8 @@ def minifigure_search_request(search_str: str):
             if all(word.lower() in row["name"].lower() for word in search_words):
                 result_dict[row['code']] = row['name']
         s3.close()
-        logging.info('Search successful with number of results: ' + str(len(result_dict)))
+        logging.info("[s3client] Search for \"" + search_str + '" successful with number of results: ' + str(len(result_dict)))
     except Exception as e:
-        logging.error("Error reading CSV from AWS S3")
+        logging.error("[s3client] Error reading CSV from AWS S3")
         logging.error(e)
     return result_dict

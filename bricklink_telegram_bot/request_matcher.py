@@ -27,14 +27,14 @@ def resolve_request(message) -> InfoRequest:
         itemType = "SET"
         if itemNum.find("-") == -1:
             itemNum = itemNum + "-1"
-        logging.info('Requesting info for set ' + itemNum)
+        logging.info('[RequestMatchers] Requesting info for set ' + itemNum)
     else:
         itemNum = matchRegexp(message, MINIFIG_EXPR)
         if itemNum:
             itemType = "MINIFIG"
-            logging.info('Requesting info for minifigure ' + itemNum)
+            logging.info('[RequestMatchers] Requesting info for minifigure ' + itemNum)
         elif message and str(message).startswith('/'):
-            logging.error('Could not resolve request: ' + message)
+            logging.error('[RequestMatchers] Could not resolve request: ' + message)
             raise Exception('Could not match request: ' + message)
     request = InfoRequest(item_type=itemType, item_number=itemNum)
     state = matchRegexp(message, NEW_EXPR)
@@ -45,13 +45,13 @@ def resolve_request(message) -> InfoRequest:
             state = "N"
         elif state == "USED":
             state = "U"
-        logging.debug("State resolved = " + state)
+        logging.debug("[RequestMatchers] State resolved = " + state)
         request.state = state
     mode = matchRegexp(message, STOCK_EXPR)
     if not mode:
         mode = matchRegexp(message, SOLD_EXPR)
     if mode:
-        logging.debug("Mode resolved = " + mode)
+        logging.debug("[RequestMatchers] Mode resolved = " + mode)
         request.mode = mode
     return request
 
@@ -66,7 +66,7 @@ def resolve_info(message):
 def resolve_price(message):
     info_request = resolve_request(message)
     url = "items/" + info_request.itemType + "/" + info_request.itemNumber + "/price"
-    logging.debug("Requesting URL: " + url)
+    logging.debug("[RequestMatchers] Requesting URL: " + url)
     response = client.get(url=url, params={
         "region": "europe",
         "guide_type": info_request.mode,

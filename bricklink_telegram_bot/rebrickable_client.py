@@ -18,6 +18,6 @@ def set_search_request(search_str: str):
     if response.status_code == 200:
         return response.json()
     else:
-        logging.error("Rebrickable returned error code " + str(response.status_code))
+        logging.error("[RebrickableClient] Rebrickable returned error code " + str(response.status_code))
         logging.error(response.text)
 
