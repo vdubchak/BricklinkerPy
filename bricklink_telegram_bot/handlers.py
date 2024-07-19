@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 
@@ -8,8 +9,8 @@ from s3_search_client import minifigure_search_request
 from rebrickable_client import set_search_request
 from response_formatters import formatInfoResponse, formatPriceResponse, formatItemsSoldResponse, \
     formatItemsForSaleResponse, set_search_response_formatter, fig_search_response_formatter, search_response_formatter, \
-    escape
-from request_matcher import resolve_price, resolve_info, resolve_sold
+    escape, subset_response_formatter, superset_response_formatter
+from request_matcher import resolve_price, resolve_info, resolve_sold, resolve_subsets, resolve_supersets
 
 BOT_NAME = os.environ['BOT_NAME']
 HELP_TEXT = "Try typing in set number, name or minifigure number to get more info on it.\n" \
@@ -167,7 +168,7 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.info("[Handlers] Processing info request")
+    logging.info("[Handlers] Processing info message handler")
     reply_markup = None
     response = None
     try:
@@ -210,6 +211,58 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
                                    parse_mode='MarkdownV2')
+
+
+async def subsetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    itemNumber = query.data.replace("SUBSET ", "")
+    logging.info("[Handlers] Subsets button")
+    logging.info("[Handlers] Argument: " + query.data)
+    reply_markup = None
+    response_keyboard = []
+    try:
+        response = resolve_subsets(itemNumber)
+        if response:
+            response_keyboard = subset_response_formatter(response, "INFO")
+    except Exception as e:
+        logging.error(e)
+    if len(response_keyboard) > 0:
+        reply_markup = InlineKeyboardMarkup(response_keyboard)
+        response_str = escape("Minifigures in '" + itemNumber + "'")
+    else:
+        response_str = escape("Nothing found in: " + itemNumber)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=response_str,
+        reply_markup=reply_markup,
+        parse_mode='MarkdownV2'
+    )
+
+
+async def supersetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    itemNumber = query.data.replace("SUPERSET ", "")
+    logging.info("[Handlers] Supersets button")
+    logging.info("[Handlers] Argument: " + query.data)
+    reply_markup = None
+    response_keyboard = []
+    try:
+        response = resolve_supersets(itemNumber)
+        if response:
+            response_keyboard = superset_response_formatter(response, "INFO")
+    except Exception as e:
+        logging.error(e)
+    if len(response_keyboard) > 0:
+        reply_markup = InlineKeyboardMarkup(response_keyboard)
+        response_str = escape("Sets containing '" + itemNumber + "'")
+    else:
+        response_str = escape("No sets found containing: " + itemNumber)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=response_str,
+        reply_markup=reply_markup,
+        parse_mode='MarkdownV2'
+    )
 
 
 async def searchSetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -333,6 +386,9 @@ def resolveItemInfoKeyboard(update: Update, item_number, item_type):
              InlineKeyboardButton("Recently sold used", callback_data="SOLD USED " + item_number)],
             [InlineKeyboardButton("For sale new", callback_data="STOCK NEW " + item_number),
              InlineKeyboardButton("For sale used", callback_data="STOCK USED " + item_number)],
+            [InlineKeyboardButton("Minifigures of " + item_number, callback_data="SUBSET " + item_number) if item_type == "SET" else
+             InlineKeyboardButton("Sets containing " + item_number, callback_data="SUPERSET " + item_number)],
             [InlineKeyboardButton("View on BL", url=BL_URL.format(item_type[0], item_number))]
         ]
+
     return keyboard

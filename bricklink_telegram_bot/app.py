@@ -8,7 +8,7 @@ from telegram.ext import MessageHandler, CommandHandler, filters, Application, C
 
 from handlers import startHandler, priceCommandHandler, helpHandler, groupButtonHandler, priceButtonHandler, \
     defButtonHandler, soldButtonHandler, stockButtonHandler, infoCommandHandler, infoMessageHandler, setSearchHandler, \
-    infoButtonHandler, minifigureSearchHandler, searchSetButtonHandler
+    infoButtonHandler, minifigureSearchHandler, searchSetButtonHandler, subsetButtonHandler, supersetButtonHandler
 
 TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG')
@@ -32,6 +32,7 @@ async def run_handler(event):
     dispatcher.add_handler(CommandHandler(command='price', callback=priceCommandHandler))
     dispatcher.add_handler(CommandHandler(command='help', callback=helpHandler))
     dispatcher.add_handler(CommandHandler(command='info', callback=infoCommandHandler))
+    dispatcher.add_handler(CommandHandler(command='search', callback=infoCommandHandler))
     dispatcher.add_handler(CommandHandler(command='search_set', callback=setSearchHandler))
     dispatcher.add_handler(CommandHandler(command='search_fig', callback=minifigureSearchHandler))
     logging.debug("Adding message handler")
@@ -43,6 +44,8 @@ async def run_handler(event):
     dispatcher.add_handler(CallbackQueryHandler(infoButtonHandler, pattern="^.*INFO.*$"))
     dispatcher.add_handler(CallbackQueryHandler(searchSetButtonHandler, pattern="^.*SETSEARCH.*$"))
     dispatcher.add_handler(CallbackQueryHandler(minifigureSearchHandler, pattern="^.*MINIFIGSEARCH.*$"))
+    dispatcher.add_handler(CallbackQueryHandler(subsetButtonHandler, pattern="^.*SUBSET.*$"))
+    dispatcher.add_handler(CallbackQueryHandler(supersetButtonHandler, pattern="^.*SUPERSET.*$"))
     dispatcher.add_handler(CallbackQueryHandler(defButtonHandler))
     await dispatcher.initialize()
     logging.debug("Application initialized")

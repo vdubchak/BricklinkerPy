@@ -10,17 +10,17 @@ ASCII_LOWER = "abcdefghijklmnopqrstuvwxyz0123456789"
 OFFSET = ord("🇦") - ord("A")
 
 
-def formatInfoResponse(message: dict) -> str:
-    logging.debug("[Response formatter] format info response for: " + str(message))
-    raw = u"\U0001F170\uFE0F Name: " + unescape_html(message["name"]) + "\n" \
-                                                                        "\U0001F5BC Image: " + message[
+def formatInfoResponse(message_dict: dict) -> str:
+    logging.debug("[Response formatter] format info response for: " + str(message_dict))
+    raw = u"\U0001F170\uFE0F Name: " + unescape_html(message_dict["name"]) + "\n" \
+                                                                        "\U0001F5BC Image: " + message_dict[
               "image_url"] + "\n" \
-                             "\U0001F4C6 Year released: " + str(message["year_released"]) + "\n" \
+                             "\U0001F4C6 Year released: " + str(message_dict["year_released"]) + "\n" \
                                                                                             "\u2693\uFE0F Weight: " + str(
-        message["weight"]) + "g\n" \
+        message_dict["weight"]) + "g\n" \
         # "\U0001F4D0 Dimensions: " + str(message["dim_x"]) + "x" + str(message["dim_y"]) + "x" + str(message[
     # "dim_z"]) + "\n"
-    return escape(raw) + resolve_availability_section(message)
+    return escape(raw) + resolve_availability_section(message_dict)
 
 
 def formatPriceResponse(message: dict) -> str:
@@ -61,7 +61,7 @@ def formatItemsForSaleResponse(message: dict) -> str:
     return escape(res)
 
 
-def unescape_html(s: str):
+def unescape_html(s: str) -> str:
     s = s.replace("&#40;", "(")
     s = s.replace("&#41;", ")")
     s = s.replace("&lt;", "<")
@@ -72,7 +72,7 @@ def unescape_html(s: str):
     return s
 
 
-def escape(s: str):
+def escape(s: str) -> str:
     s = s.replace("-", "\\-")
     s = s.replace("!", "\\!")
     s = s.replace("[", "\\[")
@@ -86,6 +86,7 @@ def escape(s: str):
     s = s.replace("&", "\\&")
     s = s.replace("<", "\\<")
     s = s.replace(">", "\\>")
+    s = s.replace("#", "\\#")
     return s
 
 
@@ -118,6 +119,41 @@ def search_response_formatter(query_text: str):
         InlineKeyboardButton(
             "Search Minifigure '" + query_text + "'",
             callback_data="MINIFIGSEARCH" + " " + query_text)]]
+    return keyboard
+
+
+def subset_response_formatter(subset_response, target: str):
+    minifigures = []
+    keyboard = []
+    for entry in subset_response:
+        item = entry["entries"][0]
+        if item["item"]["type"] == "MINIFIG":
+            minifigures.append(item)
+            logging.debug("[Response formatter] subset added: " + str(item))
+
+    if len(minifigures) > 0:
+        for item in itertools.islice(minifigures, 20):
+            keyboard.append([
+                InlineKeyboardButton(
+                    item["item"]["no"] + " - " + unescape_html(item["item"]["name"]) + " (" + str(item["quantity"]) + ")",
+                    callback_data=target + " " + item["item"]["no"])])
+    return keyboard
+
+
+def superset_response_formatter(subset_response, target: str):
+    sets = []
+    keyboard = []
+    for item in subset_response[0]["entries"]:
+        if item["item"]["type"] == "SET":
+            sets.append(item)
+            logging.debug("[Response formatter] subset added: " + str(item))
+
+    if len(sets) > 0:
+        for item in itertools.islice(sets, 20):
+            keyboard.append([
+                InlineKeyboardButton(
+                    item["item"]["no"] + " - " + unescape_html(item["item"]["name"]) + " (" + str(item["quantity"]) + ")",
+                    callback_data=target + " " + item["item"]["no"])])
     return keyboard
 
 

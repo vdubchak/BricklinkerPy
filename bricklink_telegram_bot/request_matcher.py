@@ -56,11 +56,26 @@ def resolve_request(message) -> InfoRequest:
     return request
 
 
-def resolve_info(message):
+def resolve_info(message) -> dict:
     info_request = resolve_request(message)
     url = "items/" + info_request.itemType + "/" + info_request.itemNumber
     response = client.get(url=url)
     return response
+
+
+def resolve_subsets(message) -> []:
+    info_request = resolve_request(message)
+    url = "items/" + info_request.itemType + "/" + info_request.itemNumber + "/subsets"
+    response = client.get(url=url)
+    return response
+
+
+def resolve_supersets(message) -> []:
+    info_request = resolve_request(message)
+    url = "items/" + info_request.itemType + "/" + info_request.itemNumber + "/supersets"
+    response = client.get(url=url)
+    return response
+
 
 
 def resolve_price(message):
@@ -75,9 +90,9 @@ def resolve_price(message):
     return response
 
 
-def resolve_availability(itemType, itemNum):
-    new_count = resolve_availability_by_cond_count(itemType,  itemNum, "N")
-    used_count = resolve_availability_by_cond_count(itemType,  itemNum, "U")
+def resolve_availability(item_type, item_num):
+    new_count = resolve_availability_by_cond_count(item_type, item_num, "N")
+    used_count = resolve_availability_by_cond_count(item_type, item_num, "U")
     return new_count + used_count > 0
 
 
