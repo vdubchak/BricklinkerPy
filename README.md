@@ -1,8 +1,9 @@
 # TODO
 
 - ~~Make user-friendly bot dialog flow~~
-- Add 'sets containing' button for minifigures response and 'minifigures included' for sets
+- ~~Add 'sets containing' button for minifigures response and 'minifigures included' for sets~~
 - ~~Make nested search for multiple words request~~
+- Add pagination to search results
 - make list of ignored search words (a, the, of, in etc.) 
 - Make actual readme
 - Add tests
