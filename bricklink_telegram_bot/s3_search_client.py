@@ -16,7 +16,7 @@ MINIFIGURE_FILE_NAME = os.environ['MF_FILE']
 
 def minifigure_search_request(search_str: str):
     logging.info("[s3client] Initializing Minifigure Search Request for keyword: {}".format(search_str))
-    result_dict = dict()
+    result_dict = list()
     config = Config(
         retries={
             'max_attempts': 0,
@@ -31,7 +31,12 @@ def minifigure_search_request(search_str: str):
         search_words = search_str.split(' ')
         for row in reader:
             if all(word.lower() in row["name"].lower() for word in search_words):
-                result_dict[row['code']] = row['name']
+                result_dict.append({
+                                        'num': row['code'],
+                                        'name': row['name'],
+                                        'year': row['year']
+                                    })
+
         s3.close()
         logging.info("[s3client] Search for \"" + search_str + '" successful with number of results: ' + str(len(result_dict)))
     except Exception as e:

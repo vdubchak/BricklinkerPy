@@ -13,10 +13,10 @@ OFFSET = ord("🇦") - ord("A")
 def formatInfoResponse(message_dict: dict) -> str:
     logging.debug("[Response formatter] format info response for: " + str(message_dict))
     raw = u"\U0001F170\uFE0F Name: " + unescape_html(message_dict["name"]) + "\n" \
-                                                                        "\U0001F5BC Image: " + message_dict[
+                                                                             "\U0001F5BC Image: " + message_dict[
               "image_url"] + "\n" \
                              "\U0001F4C6 Year released: " + str(message_dict["year_released"]) + "\n" \
-                                                                                            "\u2693\uFE0F Weight: " + str(
+                                                                                                 "\u2693\uFE0F Weight: " + str(
         message_dict["weight"]) + "g\n" \
         # "\U0001F4D0 Dimensions: " + str(message["dim_x"]) + "x" + str(message["dim_y"]) + "x" + str(message[
     # "dim_z"]) + "\n"
@@ -135,7 +135,8 @@ def subset_response_formatter(subset_response, target: str):
         for item in itertools.islice(minifigures, 20):
             keyboard.append([
                 InlineKeyboardButton(
-                    item["item"]["no"] + " - " + unescape_html(item["item"]["name"]) + " (" + str(item["quantity"]) + ")",
+                    item["item"]["no"] + " - " + unescape_html(item["item"]["name"]) + " (" + str(
+                        item["quantity"]) + ")",
                     callback_data=target + " " + item["item"]["no"])])
     return keyboard
 
@@ -152,7 +153,8 @@ def superset_response_formatter(subset_response, target: str):
         for item in itertools.islice(sets, 20):
             keyboard.append([
                 InlineKeyboardButton(
-                    item["item"]["no"] + " - " + unescape_html(item["item"]["name"]) + " (" + str(item["quantity"]) + ")",
+                    item["item"]["no"] + " - " + unescape_html(item["item"]["name"]) + " (" + str(
+                        item["quantity"]) + ")",
                     callback_data=target + " " + item["item"]["no"])])
     return keyboard
 
@@ -172,16 +174,13 @@ def set_search_response_formatter(message: dict, target: str):
 
 def fig_search_response_formatter(minifigs: dict, target: str):
     keyboard = []
-    limit = 0
     if len(minifigs) > 0:
-        for code, name in reversed(minifigs.items()):
-            if limit == 20:
-                break
-            limit += 1
+        sets = sorted(minifigs, key=lambda k: k['year'], reverse=True)
+        for item in itertools.islice(sets, 20):
             keyboard.append([
                 InlineKeyboardButton(
-                    code + " - " + unescape_html(name),
-                    callback_data=target + " " + code)])
+                    item['num'] + " - " + unescape_html(item['name'] + " (" + str(item["year"]) + ")"),
+                    callback_data=target + " " + item['num'])])
     return keyboard
 
 
