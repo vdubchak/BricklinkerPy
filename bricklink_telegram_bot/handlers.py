@@ -206,8 +206,9 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.error(e)
     if response is None or len(response) == 0:
-        response = escape("Can't find anything for " + str(
-            query) + ". It is possible that this item is missing from BrickLink database.")
+        response = escape("Can't find anything for " +
+                          query.data.replace("INFO ", "") +
+                          ". It is possible that this item is missing from BrickLink database.")
     await query.answer()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
                                    parse_mode='MarkdownV2')
