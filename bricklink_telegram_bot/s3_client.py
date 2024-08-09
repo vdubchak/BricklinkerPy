@@ -2,7 +2,6 @@ import csv
 import io
 import logging
 import os
-import re
 
 
 import boto3
@@ -12,6 +11,9 @@ REGION = os.environ['AWS_REGION']
 
 BUCKET = os.environ['BUCKET']
 MINIFIGURE_FILE_NAME = os.environ['MF_FILE']
+
+LEFT_BRACKET = '&#40;'
+RIGHT_BRACKET = '&#41;'
 
 
 def minifigure_search_request(search_str: str):
@@ -43,3 +45,19 @@ def minifigure_search_request(search_str: str):
         logging.error("[s3client] Error reading CSV from AWS S3")
         logging.error(e)
     return result_dict
+
+
+def write_minifigs_to_file(data_dict):
+    # creating a file buffer
+    file_buff = io.StringIO()
+    # writing csv data to file buffer
+    fig_writer = csv.writer(file_buff, dialect='excel')
+    fig_writer.writerow(['code', 'name', 'year'])
+    for code, item in data_dict.items():
+        fig_writer.writerow([code, item['name'].replace(LEFT_BRACKET, '(').replace(RIGHT_BRACKET, ')'), item['year']])
+
+    # creating s3 client connection
+    client = boto3.client('s3')
+    # placing file to S3, file_buff.getvalue() is the CSV body for the file
+    client.put_object(Body=file_buff.getvalue(), Bucket=BUCKET, Key=MINIFIGURE_FILE_NAME)
+

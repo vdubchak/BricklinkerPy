@@ -1,11 +1,12 @@
-import json
 import os
 import logging
+import xml.etree.ElementTree as ET
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat
 from telegram.ext import ContextTypes
 
-from s3_search_client import minifigure_search_request
+from authorization import is_admin
+from s3_client import minifigure_search_request, write_minifigs_to_file
 from rebrickable_client import set_search_request
 from response_formatters import formatInfoResponse, formatPriceResponse, formatItemsSoldResponse, \
     formatItemsForSaleResponse, set_search_response_formatter, fig_search_response_formatter, search_response_formatter, \
@@ -165,6 +166,45 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
                                        parse_mode='MarkdownV2')
+
+
+async def fileMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info("[Handlers] File handler.")
+    logging.info("[Handlers] Argument: " + update.message.document.file_id)
+    logging.info("[Handlers] Sender: " + update.message.from_user.name)
+    response = "Failed to update."
+    if is_admin(update.message.from_user):
+        try:
+            file = await context.bot.get_file(update.message.document)
+            bytecontent = bytes(await file.download_as_bytearray())
+            root = ET.XML(bytecontent)
+            minifig_dict = {}
+            mapped = True
+            for child in root:
+                itemid = child.find('ITEMID')
+                itemname = child.find('ITEMNAME')
+                itemyear = child.find('ITEMYEAR')
+                if itemid is None or itemyear is None or itemname is None:
+                    response = ("Invalid file format. "
+                                "Make sure you are using valid Bricklink XML and don't forget to include a year.")
+                    mapped = False
+                    break
+                minifig_dict[itemid.text] = {
+                    'name': itemname.text,
+                    'year': itemyear.text
+                }
+            if mapped:
+                write_minifigs_to_file(minifig_dict)
+                response = "Successfully updated."
+        except Exception as e:
+            logging.error(e)
+            response = "Can not read file. Make sure it has a valid Bricklink XML format."
+    else:
+        response = "Forbidden."
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=response
+    )
 
 
 async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
