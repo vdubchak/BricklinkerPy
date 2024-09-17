@@ -83,7 +83,6 @@ def resolve_price(message):
     url = "items/" + info_request.itemType + "/" + info_request.itemNumber + "/price"
     logging.debug("[RequestMatchers] Requesting URL: " + url)
     response = client.get(url=url, params={
-        "region": "europe",
         "guide_type": info_request.mode,
         "new_or_used": info_request.state
     })
@@ -113,7 +112,6 @@ def resolve_sold(message):
     info_request = resolve_request(message)
     url = "items/" + info_request.itemType + "/" + info_request.itemNumber + "/price"
     response = client.get(url=url, params={
-        "region": "europe",
         "guide_type": info_request.mode,
         "new_or_used": info_request.state
     })
