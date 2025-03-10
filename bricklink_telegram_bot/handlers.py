@@ -8,8 +8,8 @@ from telegram.ext import ContextTypes
 from authorization import is_admin
 from s3_client import minifigure_search_request, write_minifigs_to_file
 from rebrickable_client import set_search_request
-from response_formatters import formatInfoResponse, formatPriceResponse, formatItemsSoldResponse, \
-    formatItemsForSaleResponse, set_search_response_formatter, fig_search_response_formatter, search_response_formatter, \
+from response_formatters import format_info_response, format_price_response, format_items_sold_response, \
+    format_items_for_sale_response, set_search_response_formatter, fig_search_response_formatter, search_response_formatter, \
     escape, subset_response_formatter, superset_response_formatter
 from request_matcher import resolve_price, resolve_info, resolve_sold, resolve_subsets, resolve_supersets
 
@@ -25,7 +25,7 @@ START_TEXT = "What are you looking for? Try typing set/minifigure number or name
 BL_URL = "https://www.bricklink.com/v2/catalog/catalogitem.page?{}={}"
 
 
-async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("[Handlers] Processing start command")
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -33,7 +33,7 @@ async def helpHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def searchDialogHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def search_dialog_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     request_str = None
     logging.info("[Handlers] Processing search by name request")
     if context.args and context.args[0] and len(context.args[0]) > 0:
@@ -52,7 +52,7 @@ async def searchDialogHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
 
-async def setSearchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def set_search_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = None
     reply_markup = None
     request_str = None
@@ -85,7 +85,7 @@ async def setSearchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def minifigureSearchHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def minifigure_search_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = None
     request_str = None
     logging.info("[Handlers] Processing search minifigure command")
@@ -119,7 +119,7 @@ async def minifigureSearchHandler(update: Update, context: ContextTypes.DEFAULT_
     )
 
 
-async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("[Handlers] Processing start command")
     if context.args and context.args[0] and len(context.args[0]) > 0:
         reply_markup = None
@@ -128,9 +128,9 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = resolve_info(context.args[0])
             if response:
                 itemNumber = response['no']
-                reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
-                                                                            item_type=response["type"]))
-                response = formatInfoResponse(response)
+                reply_markup = InlineKeyboardMarkup(resolve_item_info_keyboard(update, item_number=itemNumber,
+                                                                               item_type=response["type"]))
+                response = format_info_response(response)
         except Exception as e:
             logging.error(e)
             response = e
@@ -146,7 +146,7 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def info_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("[Handlers] Processing info request")
     reply_markup = None
     response = None
@@ -156,19 +156,19 @@ async def infoCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_info(query)
         if response:
             itemNumber = response['no']
-            reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
-                                                                        item_type=response["type"]))
-            response = formatInfoResponse(response)
+            reply_markup = InlineKeyboardMarkup(resolve_item_info_keyboard(update, item_number=itemNumber,
+                                                                           item_type=response["type"]))
+            response = format_info_response(response)
     except Exception as e:
         logging.error(e)
     if response is None or len(response) == 0:
-        await setSearchHandler(update, context)
+        await set_search_handler(update, context)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
                                        parse_mode='MarkdownV2')
 
 
-async def fileMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def file_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("[Handlers] File handler.")
     logging.info("[Handlers] Argument: " + update.message.document.file_id)
     logging.info("[Handlers] Sender: " + update.message.from_user.name)
@@ -207,7 +207,7 @@ async def fileMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
 
 
-async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def info_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("[Handlers] Processing info message handler")
     reply_markup = None
     response = None
@@ -217,20 +217,20 @@ async def infoMessageHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_info(query)
         if response and response['no']:
             itemNumber = response['no']
-            reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
-                                                                        item_type=response["type"]))
-            response = formatInfoResponse(response)
+            reply_markup = InlineKeyboardMarkup(resolve_item_info_keyboard(update, item_number=itemNumber,
+                                                                           item_type=response["type"]))
+            response = format_info_response(response)
     except Exception as e:
         logging.error(e)
     if (response is None or len(response) == 0) \
             and (update.effective_chat.type != Chat.SUPERGROUP and update.effective_chat.type != Chat.GROUP):
-        await searchDialogHandler(update, context)
+        await search_dialog_handler(update, context)
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
                                        parse_mode='MarkdownV2')
 
 
-async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def info_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     logging.info("[Handlers] Info button")
     logging.info("[Handlers] Argument: " + query.data)
@@ -240,9 +240,9 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         itemNumber = query.data.replace("INFO ", "")
         response = resolve_info(itemNumber)
         if response:
-            reply_markup = InlineKeyboardMarkup(resolveItemInfoKeyboard(update, item_number=itemNumber,
-                                                                        item_type=response["type"]))
-            response = formatInfoResponse(response)
+            reply_markup = InlineKeyboardMarkup(resolve_item_info_keyboard(update, item_number=itemNumber,
+                                                                           item_type=response["type"]))
+            response = format_info_response(response)
     except Exception as e:
         logging.error(e)
     if response is None or len(response) == 0:
@@ -254,7 +254,7 @@ async def infoButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    parse_mode='MarkdownV2')
 
 
-async def subsetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def subset_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     itemNumber = query.data.replace("SUBSET ", "")
     logging.info("[Handlers] Subsets button")
@@ -280,7 +280,7 @@ async def subsetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
 
-async def supersetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def superset_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     itemNumber = query.data.replace("SUPERSET ", "")
     logging.info("[Handlers] Supersets button")
@@ -306,25 +306,25 @@ async def supersetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TY
     )
 
 
-async def searchSetButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def search_set_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     logging.info("[Handlers] Search set button")
     logging.info("[Handlers] Argument: " + query.data)
 
     await query.answer()
-    await setSearchHandler(update, context)
+    await set_search_handler(update, context)
 
 
-async def searchMinifigureButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def search_minifigure_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     logging.info("[Handlers] Search minifigure button")
     logging.info("[Handlers] Argument: " + query.data)
 
     await query.answer()
-    await minifigureSearchHandler(update, context)
+    await minifigure_search_handler(update, context)
 
 
-async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def price_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("[Handlers] Processing price request")
     try:
         query = update.message.text.lower()
@@ -332,7 +332,7 @@ async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
         response = resolve_price(query)
         if response:
             logging.debug("[Handlers] Response from bl: " + str(response))
-            response = formatPriceResponse(response)
+            response = format_price_response(response)
     except Exception as e:
         logging.error(e)
         response = e
@@ -342,7 +342,7 @@ async def priceCommandHandler(update: Update, context: ContextTypes.DEFAULT_TYPE
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
-async def groupButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def group_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.info("[Handlers] Processing group button request")
     query = update.callback_query
     logging.info("[Handlers] Argument: " + str(query))
@@ -350,7 +350,7 @@ async def groupButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer(url="https://t.me/" + BOT_NAME + "?start=" + item)
 
 
-async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def price_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.info("[Handlers] Processing price button request")
     query = update.callback_query
     logging.info("[Handlers] Query data: " + query.data)
@@ -359,7 +359,7 @@ async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = resolve_price(query.data)
         if response:
             logging.debug("[Handlers] Response from bl: " + str(response))
-            response = formatPriceResponse(response)
+            response = format_price_response(response)
 
     except Exception as e:
         logging.error(e)
@@ -370,7 +370,7 @@ async def priceButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
-async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def sold_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     response = None
     logging.info("[Handlers] Processing sold button request")
@@ -379,7 +379,7 @@ async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     try:
         response = resolve_sold(query.data)
         if response:
-            response = formatItemsSoldResponse(response)
+            response = format_items_sold_response(response)
     except Exception as e:
         logging.error(e)
         # response = str(e)
@@ -389,7 +389,7 @@ async def soldButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
-async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def stock_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     response = None
     logging.info("[Handlers] Processing stock button request")
@@ -397,7 +397,7 @@ async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer()
     try:
         response = resolve_sold(query.data)
-        response = formatItemsForSaleResponse(response)
+        response = format_items_for_sale_response(response)
     except Exception as e:
         logging.error(e)
         # response = str(e)
@@ -407,13 +407,13 @@ async def stockButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=response, parse_mode='MarkdownV2')
 
 
-async def defButtonHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def def_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.warning("[Handlers] Processing default button request")
     query = update.callback_query
     await query.answer(text="Not implemented yet")
 
 
-def resolveItemInfoKeyboard(update: Update, item_number, item_type):
+def resolve_item_info_keyboard(update: Update, item_number, item_type):
     if update.effective_chat.type == Chat.SUPERGROUP or update.effective_chat.type == Chat.GROUP:
         keyboard = [
             [InlineKeyboardButton("More info on " + item_number, callback_data="more " + item_number)],

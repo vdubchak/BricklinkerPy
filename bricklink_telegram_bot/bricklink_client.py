@@ -10,7 +10,7 @@ BL_ACCESS_TOKEN = os.environ['BL_ACCESS_TOKEN']
 BL_TOKEN_SECRET = os.environ['BL_TOKEN_SECRET']
 
 
-def processResponse(response, method, url, params):
+def process_response(response, method, url, params):
     if 'meta' not in response:
         raise Exception("No meta and/or data key in response")
     meta = response['meta']
@@ -43,7 +43,7 @@ class ApiClient:
         else:
             response = self.session.request(method, url, True, '', params=params)
         responseJson = json.loads(response.content)
-        return processResponse(responseJson, method, url, params)
+        return process_response(responseJson, method, url, params)
 
     def get(self, url, params=None):
         if params is None:

@@ -13,15 +13,16 @@ client = ApiClient()
 
 
 class InfoRequest:
-    def __init__(self, item_type, item_number, state="N", mode="stock"):
+    def __init__(self, item_type, item_number, state="N", mode="stock", currency_code="EUR"):
         self.itemType = item_type
         self.itemNumber = item_number
         self.state = state
         self.mode = mode
+        self.currency_code = currency_code
 
 
 def resolve_request(message) -> InfoRequest:
-    itemNum = matchRegexp(message, SET_EXPR)
+    itemNum = match_regexp(message, SET_EXPR)
     itemType = None
     if itemNum:
         itemType = "SET"
@@ -29,7 +30,7 @@ def resolve_request(message) -> InfoRequest:
             itemNum = itemNum + "-1"
         logging.info('[RequestMatchers] Requesting info for set ' + itemNum)
     else:
-        itemNum = matchRegexp(message, MINIFIG_EXPR)
+        itemNum = match_regexp(message, MINIFIG_EXPR)
         if itemNum:
             itemType = "MINIFIG"
             logging.info('[RequestMatchers] Requesting info for minifigure ' + itemNum)
@@ -37,9 +38,9 @@ def resolve_request(message) -> InfoRequest:
             logging.error('[RequestMatchers] Could not resolve request: ' + message)
             raise Exception('Could not match request: ' + message)
     request = InfoRequest(item_type=itemType, item_number=itemNum)
-    state = matchRegexp(message, NEW_EXPR)
+    state = match_regexp(message, NEW_EXPR)
     if not state:
-        state = matchRegexp(message, USED_EXPR)
+        state = match_regexp(message, USED_EXPR)
     if state:
         if state == "NEW":
             state = "N"
@@ -47,9 +48,9 @@ def resolve_request(message) -> InfoRequest:
             state = "U"
         logging.debug("[RequestMatchers] State resolved = " + state)
         request.state = state
-    mode = matchRegexp(message, STOCK_EXPR)
+    mode = match_regexp(message, STOCK_EXPR)
     if not mode:
-        mode = matchRegexp(message, SOLD_EXPR)
+        mode = match_regexp(message, SOLD_EXPR)
     if mode:
         logging.debug("[RequestMatchers] Mode resolved = " + mode)
         request.mode = mode
@@ -84,7 +85,8 @@ def resolve_price(message):
     logging.debug("[RequestMatchers] Requesting URL: " + url)
     response = client.get(url=url, params={
         "guide_type": info_request.mode,
-        "new_or_used": info_request.state
+        "new_or_used": info_request.state,
+        "currency_code": info_request.currency_code
     })
     return response
 
@@ -106,19 +108,18 @@ def resolve_availability_by_cond_count(itemType, itemNum, condition):
     return len(response["price_detail"])
 
 
-
-
 def resolve_sold(message):
     info_request = resolve_request(message)
     url = "items/" + info_request.itemType + "/" + info_request.itemNumber + "/price"
     response = client.get(url=url, params={
         "guide_type": info_request.mode,
-        "new_or_used": info_request.state
+        "new_or_used": info_request.state,
+        "currency_code": info_request.currency_code
     })
     return response
 
 
-def matchRegexp(message, expr):
+def match_regexp(message, expr):
     match = re.search(expr, message)
     if match:
         res = match.group()
