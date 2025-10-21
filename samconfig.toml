@@ -20,10 +20,11 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
-s3_prefix = "BricklinkerPy"
+s3_prefix = "BricklinkerPy-prod"
 region = "eu-north-1"
 disable_rollback = true
 image_repositories = []
+stack_name = "BricklinkerPy-prod"
 
 
 [prod.deploy.parameters]

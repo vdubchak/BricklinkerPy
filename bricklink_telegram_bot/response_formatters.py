@@ -93,6 +93,8 @@ def escape(s: str) -> str:
     s = s.replace("]", "\\]")
     s = s.replace("(", "\\(")
     s = s.replace(")", "\\)")
+    s = s.replace("{", "\\{")
+    s = s.replace("}", "\\}")
     s = s.replace(".", "\\.")
     s = s.replace("_", "\\_")
     s = s.replace("*", "\\*")
