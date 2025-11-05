@@ -1,8 +1,10 @@
 import os
 import logging
 import xml.etree.ElementTree as ET
+from io import BytesIO
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat
+import requests
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat, InputFile
 from telegram.ext import ContextTypes
 
 from authorization import is_admin
@@ -150,6 +152,7 @@ async def info_command_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     logging.info("[Handlers] Processing info request")
     reply_markup = None
     response = None
+    formatted_response = None
     try:
         query = update.message.text.lower()
         logging.info("[Handlers] Argument: " + str(query))
@@ -158,15 +161,13 @@ async def info_command_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             itemNumber = response['no']
             reply_markup = InlineKeyboardMarkup(resolve_item_info_keyboard(update, item_number=itemNumber,
                                                                            item_type=response["type"]))
-            response = format_info_response(response)
+            formatted_response = format_info_response(response)
     except Exception as e:
         logging.error(e)
-    if response is None or len(response) == 0:
+    if formatted_response is None or len(formatted_response) == 0:
         await set_search_handler(update, context)
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
-                                       parse_mode='MarkdownV2')
-
+        await respond_info(context, formatted_response, reply_markup, response, update)
 
 async def file_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("[Handlers] File handler.")
@@ -211,6 +212,7 @@ async def info_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     logging.info("[Handlers] Processing info message handler")
     reply_markup = None
     response = None
+    formatted_response = None
     try:
         query = update.message.text.lower()
         logging.info("[Handlers] Argument: " + str(query))
@@ -219,14 +221,43 @@ async def info_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             itemNumber = response['no']
             reply_markup = InlineKeyboardMarkup(resolve_item_info_keyboard(update, item_number=itemNumber,
                                                                            item_type=response["type"]))
-            response = format_info_response(response)
+            formatted_response = format_info_response(response)
     except Exception as e:
         logging.error(e)
-    if (response is None or len(response) == 0) \
+    if (formatted_response is None or len(formatted_response) == 0) \
             and (update.effective_chat.type != Chat.SUPERGROUP and update.effective_chat.type != Chat.GROUP):
         await search_dialog_handler(update, context)
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
+        await respond_info(context, formatted_response, reply_markup, response, update)
+
+
+async def respond_info(context, formatted_response, reply_markup, response, update):
+    if response["image_url"]:
+        try:
+            image_url = "https:" + response["image_url"]
+            logging.debug("[Handlers] Image URL: " + image_url)
+            #scummy hack
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+            }
+
+            image_response = requests.get(image_url, headers=headers)
+            image_response.raise_for_status()
+            image_file = BytesIO(image_response.content)
+
+            image = InputFile(image_file)
+            image.filename = response["no"] + ".jpg"
+            await context.bot.send_photo(photo=image, chat_id=update.effective_chat.id, caption=formatted_response,
+                                         reply_markup=reply_markup,
+                                         parse_mode='MarkdownV2')
+        except requests.RequestException as e:
+            logging.error(e)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=formatted_response,
+                                           reply_markup=reply_markup,
+                                           parse_mode='MarkdownV2')
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=formatted_response,
+                                       reply_markup=reply_markup,
                                        parse_mode='MarkdownV2')
 
 
@@ -236,22 +267,22 @@ async def info_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     logging.info("[Handlers] Argument: " + query.data)
     reply_markup = None
     response = None
+    formatted_response = None
     try:
         itemNumber = query.data.replace("INFO ", "")
         response = resolve_info(itemNumber)
         if response:
             reply_markup = InlineKeyboardMarkup(resolve_item_info_keyboard(update, item_number=itemNumber,
                                                                            item_type=response["type"]))
-            response = format_info_response(response)
+            formatted_response = format_info_response(response)
     except Exception as e:
         logging.error(e)
-    if response is None or len(response) == 0:
-        response = escape("Can't find anything for " +
+    if formatted_response is None or len(response) == 0:
+        formatted_response = escape("Can't find anything for " +
                           query.data.replace("INFO ", "") +
                           ". It is possible that this item is missing from BrickLink database.")
     await query.answer()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response, reply_markup=reply_markup,
-                                   parse_mode='MarkdownV2')
+    await respond_info(context, formatted_response, reply_markup, response, update)
 
 
 async def subset_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
